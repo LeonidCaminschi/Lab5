@@ -31,8 +31,8 @@ namespace Roles {
                 strength += 5;
                 health -= 5;
                 mana -= 3;
-                if (!check_alive()) cout << name << " is dead another challenger shall take his place" << endl;
-                else cout << name << " used rage gained strength and lost a bit of hp and mana" << endl;
+                if(!check_alive()) return;
+                cout << name << " used rage gained strength and lost a bit of hp and mana" << endl;
             }
         }
 
@@ -56,6 +56,20 @@ namespace Roles {
                 std::cout << name << " failed to use dual chop due to lack of mana" << endl;
                 return 0;
             }
+        }
+
+        int pseudo_ai() {
+            if (!buffed) {
+                rage();
+                return 0;
+            }
+
+            if (mana >= 9)
+                return dual_chop();
+            else
+                meditate();
+
+            return 0;
         }
     };
 
@@ -113,6 +127,20 @@ namespace Roles {
                 return 0;
             }
         }
+
+        int pseudo_ai() {
+            if (!buffed) {
+                reflection();
+                return 0;
+            }
+
+            if (mana >= 15)
+                return thunderStrike();
+            else
+                meditate();
+
+            return 0;
+        }
     };
 
     struct Rogue : SubRole::DexterityBased{ // 3rd class
@@ -160,6 +188,20 @@ namespace Roles {
                 return 0;
             }
         }
+
+        int pseudo_ai() {
+            if (!buffed) {
+                intoTheShadows();
+                return 0;
+            }
+
+            if (mana >= 12)
+                return poisonStrike();
+            else
+                meditate();
+
+            return 0;
+        }
     };
 
     struct Crusader : public SubRole::FaithBased { // 4th class
@@ -199,7 +241,24 @@ namespace Roles {
         int lastBreathe() {
             cout << name << " used the remaining of his life to launch a huge attack dying in the process" << endl;
             health = 0;
+            alive = false;
             return faith * 5/4;
+        }
+
+        int pseudo_ai() {
+            if (health <= max_health - faith) {
+                if (mana == 12) {
+                    holy_heal();
+                    return 0;
+                } else {
+                    if (health <= max_health * 1/8)
+                        return lastBreathe();
+                    meditate();
+                    return 0;
+                }
+            }
+
+            return armorBash();
         }
     };
 
@@ -248,6 +307,23 @@ namespace Roles {
             } else {
                 cout << name << " could not heal to full hp due to lack of mana and oranges" << endl;
             }
+        }
+
+        int pseudo_ai() {
+            if (health < 1/4) {
+                if (mana >= 9) {
+                    eatOrange();
+                    return 0;
+                } else {
+                    meditate();
+                    return 0;
+                }
+            }
+
+            if(mana >= 3) return shoot();
+            if(mana >= 1) return ignite();
+            meditate();
+            return 0;
         }
     };
 
@@ -306,6 +382,17 @@ namespace Roles {
                 return 0;
             }
         }
+
+        int pseudo_ai() {
+            if(!beast) {
+                beastTransform();
+                return 0;
+            }
+
+            if(mana >= 1) return bite();
+            meditate();
+            return 0;
+        }
     };
 
     struct Knight : SubRole::StrengthBased { // 7th class
@@ -330,7 +417,7 @@ namespace Roles {
             return 3 / 2 * strength;
         }
 
-        void fotify() {
+        void fortify() {
             if (!buffed) {
                 armor += 1 / 4 * armor;
                 cout << name << " inceased his armor" << endl;
@@ -343,6 +430,15 @@ namespace Roles {
         int shield_bash() {
             cout << name << " shield bashed the enemy to deal " << 1 / 2 * strength << endl;
             return 1 / 2 * strength;
+        }
+
+        int pseudo_ai() {
+            if(!buffed) {
+                fortify();
+                return 0;
+            }
+
+            return lunge();
         }
     };
 
@@ -368,9 +464,9 @@ namespace Roles {
         int steal() {
             if (mana >= 3) {
                 mana -= 3;
-                health += 1 / 4 * intelligence;
+                health += 1 / 6 * intelligence;
                 cout << name << " stolen the lifeforce of the enemy dealing " << 1 / 2 * intelligence << " damage and healing "
-                << 1 / 4 * intelligence << endl;
+                << 1 / 6 * intelligence << endl;
                 return 1 / 2 * intelligence;
             } else {
                 cout << name << " could not draim the lifeforce of the enemy due to lack of mana" << endl;
@@ -406,6 +502,31 @@ namespace Roles {
                 cout << name << " could not summon the enemy due to lack of battlefield space" << endl;
             }
             return cumulative_attack;
+        }
+
+        int pseudo_ai() {
+            if(!buffed) {
+                undead_armor();
+                return 0;
+            }
+
+            if (health <= 1/3 * max_health || summons == 3) {
+                if (mana >= 3)
+                    return steal();
+                else {
+                    meditate();
+                    return 0;
+                }
+            }
+
+            if (summons < 3) {
+                if (mana >= 15)
+                    return summonUndead();
+                else {
+                    meditate();
+                    return 0;
+                }
+            }
         }
     };
 
@@ -465,6 +586,25 @@ namespace Roles {
                 cout << name << " could not cast revive due to lack of mana" << endl;
             }
         }
+
+        int pseudo_ai() {
+            if (health <= max_health - 3/4 * faith) {
+                if (mana >= 10) {
+                    holyHeal();
+                    return 0;
+                } else {
+                    meditate();
+                    return 0;
+                }
+            }
+
+            if (mana >= 5) {
+                return holyFire();
+            } else {
+                meditate();
+                return 0;
+            }
+        }
     };
 
     struct Summoner : SubRole::Summoner { // 8th class
@@ -481,6 +621,16 @@ namespace Roles {
             cumulative_attack = 0;
             health = max_health;
             mana = max_mana;
+        }
+
+        int summonDamage() {
+            if (mana >= 7) {
+                mana -= 7;
+                cout << name << " has ordered his summons to attack" << endl;
+                return cumulative_attack;
+            } else {
+                cout << name << " has failed to order his summons to attack" << endl;
+            }
         }
 
         int summonSpirit() {
@@ -516,7 +666,7 @@ namespace Roles {
         }
 
         int summonBear() {
-            if (summons < 3) {
+            if (summons < 2) {
                 if (mana >= 10) {
                     summons += 2;
                     mana -= 10;
@@ -529,6 +679,35 @@ namespace Roles {
                 cout << name << " could not summon spirit due to lack of battlefield space" << endl;
             }
             return cumulative_attack;
+        }
+
+        int pseudo_ai() {
+            if (summons < 2) {
+                if (mana >= 15) {
+                    return summonGuardian();
+                } else {
+                    meditate();
+                    return 0;
+                }
+            }
+
+            if (summons < 3) {
+                if(mana >= 3) {
+                    return summonSpirit();
+                } else {
+                    meditate();
+                    return 0;
+                }
+            }
+
+            if (summons == 3) {
+                if (mana >= 7) {
+                    return summonDamage();
+                } else {
+                    meditate();
+                    return 0;
+                }
+            }
         }
     };
 } // namespace Roles

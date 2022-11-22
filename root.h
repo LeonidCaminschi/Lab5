@@ -35,6 +35,20 @@ namespace RootRole {
             }
             std::cout << name << " meditated and recovered mana total current mana " << mana << std::endl;
         }
+
+        virtual int pseudo_ai() = 0;
+
+        void combine_forces(RootRole::Player* ally) {
+            health += ally->health;
+            max_health += ally->max_health;
+            armor += ally->armor;
+            mana += ally->mana;
+            max_mana += ally->max_mana;
+        }
+
+        std::string get_name() {
+            return name;
+        }
     }; // Player struct
 
 }; // Root namespace
